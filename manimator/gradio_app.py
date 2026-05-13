@@ -87,7 +87,8 @@ def interface_fn(prompt=None, pdf_file=None):
 description_md = """
 ## 🎬 manimator
 
-This tool helps you create visualizations of complex concepts using natural language or PDF papers:
+This tool helps you create visualizations of complex concepts using natural
+language or PDF papers:
 
 - **Text Prompt**: Describe the concept you want to visualize
 - **PDF Upload**: Upload a research paper to extract key visualizations
@@ -102,7 +103,9 @@ EXAMPLE_VIDEOS: Dict[str, str] = {
     "What is a CNN?": "CNNExplanation.mp4",
     "BitNet Paper": "BitNet.mp4",
     "Explain Fourier Transform": "FourierTransformExplanation.mp4",
-    "How does backpropagation work in Neural Networks?": "NeuralNetworksBackPropagationExample.mp4",
+    "How does backpropagation work in Neural Networks?": (
+        "NeuralNetworksBackPropagationExample.mp4"
+    ),
     "What is SVM?": "SVMExplanation.mp4",
 }
 

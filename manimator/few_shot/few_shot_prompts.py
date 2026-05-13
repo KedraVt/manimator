@@ -10,8 +10,10 @@ FOURIER_TRANSFORM_EXAMPLE = [
         "content": r"""### *Topic*: Fourier Transform
 *Key Points*:
 - Time domain vs frequency domain
-- Decomposing signals into sine waves: \( f(t) = \sum_{n} A_n \sin(2\pi n t + \phi_n) \)
-- Fourier Transform formula: \( \hat{f}(\xi) = \int_{-\infty}^{\infty} f(t) e^{-2\pi i \xi t} dt \)
+- Decomposing signals into sine waves:
+  \( f(t) = \sum_{n} A_n \sin(2\pi n t + \phi_n) \)
+- Fourier Transform formula:
+  \( \hat{f}(\xi) = \int_{-\infty}^{\infty} f(t) e^{-2\pi i \xi t} dt \)
 - Applications in signal processing
 *Visual Elements*:
 - Animate a complex signal being decomposed into sine waves.
@@ -83,15 +85,25 @@ PDF_EXAMPLE = {
     "role": "assistant",
     "content": r"""*Topic*: Deep Residual Learning for Image Recognition
 *Key Points*:
-1. *Degradation Problem*: Explain how deeper networks suffer from higher training error despite having more capacity.
-2. *Residual Learning*: Show how residual learning reformulates the problem by learning residual functions \( \mathcal{F}(\mathbf{x}) = \mathcal{H}(\mathbf{x}) - \mathbf{x} \) instead of direct mappings \( \mathcal{H}(\mathbf{x}) \).
-3. *Shortcut Connections*: Visualize how identity shortcuts (skip connections) are added to the network to enable residual learning.
-4. *Deep Residual Networks*: Demonstrate the architecture of deep residual networks (e.g., ResNet-34, ResNet-152) and how they outperform plain networks.
-5. *Bottleneck Design*: Explain the bottleneck design in deeper ResNets (e.g., ResNet-50/101/152) using \(1 \times 1\), \(3 \times 3\), and \(1 \times 1\) convolutions.
+1. *Degradation Problem*: Explain how deeper networks suffer from higher
+   training error despite having more capacity.
+2. *Residual Learning*: Show how residual learning reformulates the problem
+   by learning residual functions
+   \( \mathcal{F}(\mathbf{x}) = \mathcal{H}(\mathbf{x}) - \mathbf{x} \)
+   instead of direct mappings \( \mathcal{H}(\mathbf{x}) \).
+3. *Shortcut Connections*: Visualize how identity shortcuts (skip connections)
+   are added to the network to enable residual learning.
+4. *Deep Residual Networks*: Demonstrate the architecture of deep residual
+   networks (e.g., ResNet-34, ResNet-152) and how they outperform plain networks.
+5. *Bottleneck Design*: Explain the bottleneck design in deeper ResNets
+   (e.g., ResNet-50/101/152) using \(1 \times 1\), \(3 \times 3\),
+   and \(1 \times 1\) convolutions.
 
-*Style*: 3Blue1Brown style (clean, minimalistic, with smooth animations and clear labels)
+*Style*: 3Blue1Brown style (clean, minimalistic, smooth animations, clear labels)
 *Additional Requirements*:
-- Include mathematical formulas (e.g., \( \mathcal{F}(\mathbf{x}) = \mathcal{H}(\mathbf{x}) - \mathbf{x} \)) and graphs (e.g., training error vs. depth).
+- Include mathematical formulas
+  (e.g., \( \mathcal{F}(\mathbf{x}) = \mathcal{H}(\mathbf{x}) - \mathbf{x} \))
+  and graphs (e.g., training error vs. depth).
 - Use color coding to differentiate between plain networks and residual networks.
 - Animate the flow of data through shortcut connections and residual blocks.
 - Provide step-by-step explanations for each concept.""",

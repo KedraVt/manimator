@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg texlive libcairo2-dev libpango1.0-dev
+          pip install poetry
+          poetry config virtualenvs.create false
+          poetry install
+
+      - name: Run Black Formatting Check
+        run: poetry run black --check manimator
+
+      - name: Run Flake8 Linting
+        run: poetry run flake8 manimator
+
+      - name: Run Mypy Type Checking
+        run: poetry run mypy manimator
+
+      - name: Run Pytest
+        run: poetry run pytest

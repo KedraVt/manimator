@@ -30,7 +30,13 @@ def generate_animation_response(prompt: str) -> str:
             },
             {
                 "role": "user",
-                "content": f"{prompt}\n\n NOTE!!!: Make sure the objects or text in the generated code are not overlapping at any point in the video. Make sure that each scene is properly cleaned up before transitioning to the next scene.",
+                "content": (
+                    f"{prompt}\n\n"
+                    " NOTE!!!: Make sure the objects or text in the generated "
+                    "code are not overlapping at any point in the video. "
+                    "Make sure that each scene is properly cleaned up before "
+                    "transitioning to the next scene."
+                ),
             },
         ]
         response = litellm.completion(

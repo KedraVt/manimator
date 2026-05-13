@@ -4,9 +4,6 @@ from io import BytesIO
 import base64
 import requests
 from importlib import resources
-from pathlib import Path
-from typing import Optional
-import base64
 
 
 def read_base64_few_shot_file(filename: str = "few_shot_1.pdf") -> str:
@@ -86,5 +83,5 @@ def compress_pdf(content: bytes, compression_level: int = 5) -> str:
 
         compressed_bytes = output.getvalue()
         return base64.b64encode(compressed_bytes).decode("utf-8")
-    except Exception as e:
+    except Exception:
         return base64.b64encode(content).decode("utf-8")

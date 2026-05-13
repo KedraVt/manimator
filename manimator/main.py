@@ -1,24 +1,44 @@
-from fastapi import FastAPI, HTTPException, File, UploadFile
+from fastapi import FastAPI, HTTPException, File, UploadFile, Request
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
 import re
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from dotenv import load_dotenv
+
+from slowapi import Limiter, _rate_limit_exceeded_handler
+from slowapi.util import get_remote_address
+from slowapi.errors import RateLimitExceeded
 
 from manimator.utils.schema import ManimProcessor
 from manimator.utils.helpers import download_arxiv_pdf
+from functools import lru_cache
+
 from manimator.api.animation_generation import generate_animation_response
 from manimator.api.scene_description import process_prompt_scene, process_pdf_prompt
-
 
 load_dotenv()
 
 
 class PromptRequest(BaseModel):
-    prompt: str
+    prompt: str = Field(
+        ...,
+        min_length=1,
+        description="The text prompt to generate animation or scene description",
+    )
 
 
+class SceneDescriptionResponse(BaseModel):
+    scene_description: str
+
+
+class HealthCheckResponse(BaseModel):
+    status: str
+
+
+limiter = Limiter(key_func=get_remote_address)
 app = FastAPI()
+app.state.limiter = limiter
+app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)
 
 app.add_middleware(
     CORSMiddleware,
@@ -29,13 +49,15 @@ app.add_middleware(
 )
 
 
-@app.get("/health-check")
-async def health_check():
+@app.get("/health-check", response_model=HealthCheckResponse)
+@limiter.limit("5/minute")
+async def health_check(request: Request):
     return {"status": "ok"}
 
 
-@app.post("/generate-pdf-scene")
-async def generate_pdf_scene(file: UploadFile = File(...)):
+@app.post("/generate-pdf-scene", response_model=SceneDescriptionResponse)
+@limiter.limit("5/minute")
+async def generate_pdf_scene(request: Request, file: UploadFile = File(...)):
     try:
         content = await file.read()
         scene_description = process_pdf_prompt(content)
@@ -44,35 +66,50 @@ async def generate_pdf_scene(file: UploadFile = File(...)):
         raise HTTPException(status_code=500, detail=str(e))
 
 
-@app.post("/generate-prompt-scene")
-async def generate_prompt_scene(request: PromptRequest):
+@lru_cache(maxsize=128)
+def cached_process_prompt_scene(prompt: str) -> str:
+    return process_prompt_scene(prompt)
+
+
+@app.post("/generate-prompt-scene", response_model=SceneDescriptionResponse)
+@limiter.limit("10/minute")
+async def generate_prompt_scene(request: Request, body: PromptRequest):
     try:
-        return {"scene_description": process_prompt_scene(request.prompt)}
+        return SceneDescriptionResponse(
+            scene_description=cached_process_prompt_scene(body.prompt)
+        )
     except Exception as e:
         raise HTTPException(
             status_code=500, detail=f"Error generating scene descriptions: {str(e)}"
         )
 
 
-@app.get("/pdf/{arxiv_id}")
-async def process_arxiv_by_id(arxiv_id: str):
+@lru_cache(maxsize=128)
+def cached_process_arxiv(arxiv_id: str) -> str:
+    arxiv_url = f"https://arxiv.org/pdf/{arxiv_id}"
+    pdf_content = download_arxiv_pdf(arxiv_url)
+    return process_pdf_prompt(pdf_content)
+
+
+@app.get("/pdf/{arxiv_id}", response_model=SceneDescriptionResponse)
+@limiter.limit("5/minute")
+async def process_arxiv_by_id(request: Request, arxiv_id: str):
     """Process arxiv paper by ID"""
     try:
-        arxiv_url = f"https://arxiv.org/pdf/{arxiv_id}"
-        pdf_content = download_arxiv_pdf(arxiv_url)
-        scene_description = process_pdf_prompt(pdf_content)
+        scene_description = cached_process_arxiv(arxiv_id)
         return {"scene_description": scene_description}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/generate-animation")
-async def generate_animation(request: PromptRequest):
+@limiter.limit("2/minute")
+async def generate_animation(request: Request, body: PromptRequest):
     processor = ManimProcessor()
 
     try:
         with processor.create_temp_dir() as temp_dir:
-            response = generate_animation_response(request.prompt)
+            response = generate_animation_response(body.prompt)
             code = processor.extract_code(response)
             if not code:
                 raise HTTPException(
