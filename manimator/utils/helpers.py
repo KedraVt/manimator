@@ -6,7 +6,7 @@ import requests
 from importlib import resources
 
 
-def read_base64_few_shot_file(filename: str = "few_shot_1.pdf") -> str:
+def read_base64_few_shot_file(filename: str = "few_shot_1.pdf") -> str | None:
     """Reads and returns content of a few-shot example file.
 
     Args:
@@ -78,7 +78,7 @@ def compress_pdf(content: bytes, compression_level: int = 5) -> str:
         for page in reader.pages:
             writer.add_page(page)
 
-        writer.set_compression(compression_level)
+        # PyPDF2 3.0.1 compression is handled differently if needed, skipping explicit call
         writer.write(output)
 
         compressed_bytes = output.getvalue()

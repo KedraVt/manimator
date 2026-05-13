@@ -50,7 +50,7 @@ def process_prompt_scene(prompt: str) -> str:
 
 def process_pdf_prompt(
     file_content: bytes,
-    model: str = os.getenv("PDF_SCENE_GEN_MODEL"),
+    model: str | None = os.getenv("PDF_SCENE_GEN_MODEL"),
     retry: bool = False,
 ) -> str:
     """Process a PDF file and generate a scene description using the specified model.

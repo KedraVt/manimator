@@ -59,8 +59,8 @@ def process_pdf(file_path: str):
     try:
         if not file_path:
             return "Error: No file uploaded"
-        with open(file_path, "rb") as file_path:
-            file_bytes = file_path.read()
+        with open(file_path, "rb") as f:
+            file_bytes = f.read()
             scene_description = process_pdf_prompt(file_bytes)
             print("scene_description", scene_description)
         return scene_description
