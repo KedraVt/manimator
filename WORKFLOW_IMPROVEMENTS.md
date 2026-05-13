@@ -82,3 +82,13 @@ To improve the efficiency of the project—spanning code quality, security, perf
 - **PDF Extraction Optimization:** Improve PDF extraction logic using more advanced parsers (e.g., `PyMuPDF` or `pdfplumber`) to handle mathematical equations and figures better before feeding them to the LLM.
 - **Storage Lifecycle Management:**
   - Implement a cleanup mechanism (e.g., a background cron job or a `Celery beat` task) that automatically purges rendered MP4s, temporary LaTeX files, and partial renders older than a specific timeframe (like 24 hours) to prevent the server's disk space from filling up silently over time.
+
+### Phase 5: Business Logic & User Experience (UX)
+- **Hybrid Access Model (Standard vs. BYOK):** Implement a dual-tier system. A "Standard" tier where the platform manages API calls (using a credit system), and a "Pro" tier allowing users to input their own API keys (BYOK - Bring Your Own Key) to bypass API markups and only pay for computing time.
+- **Pre-Generation "Discovery Phase":** Integrate an initial LLM interaction where the AI acts as a Product Manager. It will analyze the user's prompt and ask clarifying questions about physics parameters, colors, or durations before generating the Manim code, preventing costly hallucinations.
+- **Credit/Cost Estimation Engine:** Build a pre-flight estimation tool. Use token-counting libraries (like `tiktoken`) for the LLM cost, and perform static analysis on the generated Python code (counting `Create` or `Transform` operations) to provide the user with a realistic credit cost interval before they click render.
+- **Educational Examples Gallery (Sandbox):** Create a gallery of pre-rendered animations categorized by complexity (e.g., Basic Math, Physics Simulations, Advanced 3D). Label each example with its exact credit cost to act as a visual baseline for users, reducing billing surprises.
+
+### Phase 6: Long-Term Architectural Evolution
+- **Golang Orchestration Layer:** Plan a migration to decouple the FastAPI server. Replace the main backend with Go (Golang) to handle user authentication, rate limiting, and WebSocket connections using lightweight Goroutines. Python will be strictly relegated to isolated, ephemeral Docker "Workers" that only spin up to render the video.
+- **Ephemeral vs. Persistent Storage Strategy:** Formalize the data storage lifecycle based on the rendering origin. Cloud-rendered videos (Manim) will use temporary ephemeral storage (deleted after download to save AWS/Vercel bucket costs), while any future client-side renders will be saved directly to the user's local device storage.
