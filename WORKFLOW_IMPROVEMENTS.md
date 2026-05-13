@@ -55,6 +55,8 @@ To improve the efficiency of the project—spanning code quality, security, perf
 - **Strict Schema Validation (Pydantic V2):** Ensure data flowing between internal modules is strictly typed. Use Pydantic models for all LLM outputs (via LiteLLM’s response_format) and for data passed to the ManimProcessor. This prevents crashes from weirdly formatted LLM responses.
 - **Refactoring:**
   - Abstract the LLM calls into a dedicated service/class to decouple business logic from the specific LLM library, making it easier to mock in tests.
+- **Dynamic Prompt Management (Prompt Registry):**
+  - Decouple LLM system instructions from static code (currently hardcoded in `manimator/utils/system_prompts.py`) by migrating them to a dynamic management system like Langfuse or a dedicated database table. This enables real-time hot-fixing of AI hallucinations, A/B testing of prompt variations for cost-efficiency, and instant version control rollbacks without requiring full application redeployments.
 - **Self-Healing Animation Loop:**
   - LLMs frequently make minor syntax errors in Manim. Implement a Feedback Loop: if the `ManimProcessor` catches a SubprocessError during rendering, feed the error log back into the LLM with a prompt to correct its code. This drastically reduces manual intervention for minor syntax hallucinations.
 - **Observability and LLM Tracing:**
@@ -85,7 +87,7 @@ To improve the efficiency of the project—spanning code quality, security, perf
 
 ### Phase 5: Business Logic & User Experience (UX)
 - **Hybrid Access Model (Standard vs. BYOK):** Implement a dual-tier system. A "Standard" tier where the platform manages API calls (using a credit system), and a "Pro" tier allowing users to input their own API keys (BYOK - Bring Your Own Key) to bypass API markups and only pay for computing time.
-- **Pre-Generation "Discovery Phase":** Integrate an initial LLM interaction where the AI acts as a Product Manager. It will analyze the user's prompt and ask clarifying questions about physics parameters, colors, or durations before generating the Manim code, preventing costly hallucinations.
+- **Conversational Co-pilot Phase (Pre-Generation Refinement):** Introduce an optional interactive step before Manim execution where an "Analyzer" LLM evaluates the user's initial input for missing parameters (e.g., specific colors, animation speed, mathematical focus areas). If ambiguities exist, the AI asks clarifying questions to construct a highly precise "Super-Prompt." This reduces the friction of trial-and-error, prevents wasted computing credits on undesirable renders, and significantly improves the final educational output.
 - **Credit/Cost Estimation Engine:** Build a pre-flight estimation tool. Use token-counting libraries (like `tiktoken`) for the LLM cost, and perform static analysis on the generated Python code (counting `Create` or `Transform` operations) to provide the user with a realistic credit cost interval before they click render.
 - **Educational Examples Gallery (Sandbox):** Create a gallery of pre-rendered animations categorized by complexity (e.g., Basic Math, Physics Simulations, Advanced 3D). Label each example with its exact credit cost to act as a visual baseline for users, reducing billing surprises.
 
