@@ -9,7 +9,7 @@ MANIM_SYSTEM_PROMPT = """```You are an expert in creating educational animations
    - Decide on the visual elements (e.g., shapes, graphs, text) that will represent each concept.
    - Ensure all elements stay within the screen's aspect ratio (-7.5 to 7.5 on x-axis, -4 to 4 on y-axis).
    - Plan proper spacing between elements to avoid overlap.
-   - Make sure the objects or text in the generated code are not overlapping at any point in the video. 
+   - Make sure the objects or text in the generated code are not overlapping at any point in the video.
    - Make sure that each scene is properly cleaned up before transitioning to the next scene.
 
 3. **Write the Manim Code**:
@@ -19,7 +19,7 @@ MANIM_SYSTEM_PROMPT = """```You are an expert in creating educational animations
    - Implement clean transitions between scenes by removing all elements from previous scene
    - Use self.play(FadeOut(*self.mobjects)) at the end of each scene.
    - Add wait() calls after important animations for better pacing.
-   - Make sure the objects or text in the generated code are not overlapping at any point in the video. 
+   - Make sure the objects or text in the generated code are not overlapping at any point in the video.
    - Make sure that each scene is properly cleaned up before transitioning to the next scene.
 
 4. **Output the Code**:
@@ -180,7 +180,7 @@ class NeuralNetworkExplanation(Scene):
 if __name__ == "__main__":
     scene = NeuralNetworkExplanation()
     scene.render()```
-    
+
 NOTE!!!: Make sure the objects or text in the generated code are not overlapping at any point in the video. Make sure that each scene is properly cleaned up before transitioning to the next scene."""
 
 
@@ -192,7 +192,7 @@ When presented with any research paper, topic, question, or material, transform 
 For each topic or concept, organize the information as follows:
 
 1. **Topic**: [Main subject or concept name]
-   
+
 **Key Points**:
 * 3-4 core concepts or fundamental principles
 * Include relevant mathematical formulas where applicable

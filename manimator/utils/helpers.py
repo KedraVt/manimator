@@ -4,12 +4,9 @@ from io import BytesIO
 import base64
 import requests
 from importlib import resources
-from pathlib import Path
-from typing import Optional
-import base64
 
 
-def read_base64_few_shot_file(filename: str = "few_shot_1.pdf") -> str:
+def read_base64_few_shot_file(filename: str = "few_shot_1.pdf") -> str | None:
     """Reads and returns content of a few-shot example file.
 
     Args:
@@ -81,10 +78,10 @@ def compress_pdf(content: bytes, compression_level: int = 5) -> str:
         for page in reader.pages:
             writer.add_page(page)
 
-        writer.set_compression(compression_level)
+        # PyPDF2 3.0.1 compression is handled differently if needed, skipping explicit call
         writer.write(output)
 
         compressed_bytes = output.getvalue()
         return base64.b64encode(compressed_bytes).decode("utf-8")
-    except Exception as e:
+    except Exception:
         return base64.b64encode(content).decode("utf-8")

@@ -8,7 +8,8 @@ from fastapi import HTTPException
 
 
 class ManimProcessor:
-    """Handles Manim animation processing, including code extraction and video rendering.
+    """Handles Manim animation processing, including code extraction and video
+    rendering.
 
     This class provides utilities for:
     - Creating temporary directories for processing

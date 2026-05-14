@@ -1,0 +1,107 @@
+# Manimator: Current Workflow & Improvement Plan
+
+This document outlines the current workflow, resources, tools, and APIs utilized in the `manimator` repository, followed by a comprehensive plan to improve the project's overall efficiency.
+
+## 1. Current Workflow & Architecture
+
+### Development & Deployment Workflow
+- **Dependency Management:** Managed via `Poetry` (`pyproject.toml`, `poetry.lock`) with fallback `requirements.txt` and system packages (`packages.txt`).
+- **Containerization:** `Docker` is used to build and run the application in isolated environments (both FastAPI and Gradio).
+- **Environment Management:** Managed through `.env` files (template `.env.example`).
+- **Running Locally:** Uses `poetry run app` for FastAPI and `poetry run gradio-app` for the Gradio interface.
+
+### Resources & Tools Used
+- **Python Frameworks:** `FastAPI` (for REST APIs), `Gradio` (for Web UI interactable demo).
+- **Animation Engine:** `Manim` (used to generate MP4 animations from Python code).
+- **PDF Processing:** `PyPDF2` (for parsing and compressing PDFs).
+- **Server:** `Uvicorn` (ASGI web server implementation for Python).
+- **System Dependencies:** `ffmpeg`, `texlive`, `libcairo2`, `libpango1.0`, `dvisvgm` (required by Manim).
+
+### APIs & External Services
+- **LiteLLM:** Used as an abstraction layer to interact with various LLM providers (e.g., DeepSeek, Llama 3.3 via Groq, Gemini 1.5/2.0).
+- **arXiv API:** Fetching and downloading research papers as PDFs directly from `arxiv.org`.
+
+### Internal Modules & Functions
+- **`manimator/main.py`:** Main entry point for FastAPI. Exposes endpoints (`/generate-pdf-scene`, `/generate-prompt-scene`, `/pdf/{arxiv_id}`, `/generate-animation`).
+- **`manimator/gradio_app.py`:** Main entry point for the Gradio frontend application.
+- **`manimator/api/scene_description.py`:**
+  - `process_prompt_scene`: Generates a scene description from a user prompt using LiteLLM.
+  - `process_pdf_prompt`: Processes a PDF file (extracts/compresses) and generates a scene description using LiteLLM.
+- **`manimator/api/animation_generation.py`:**
+  - `generate_animation_response`: Uses LLM to generate Manim Python code based on a scene description prompt.
+- **`manimator/utils/helpers.py`:** Utilities for downloading arXiv PDFs, compressing PDFs, and reading few-shot base64 examples.
+- **`manimator/utils/schema.py`:**
+  - `ManimProcessor`: Class that handles the extraction of python code from LLM responses, saving it to temp files, and rendering the Manim scenes into MP4 videos using subprocess.
+- **`manimator/utils/system_prompts.py`:** Contains LLM system prompts (`MANIM_SYSTEM_PROMPT`, `SCENE_SYSTEM_PROMPT`).
+- **`manimator/few_shot/`:** Contains few-shot examples for PDF handling and prompt processing.
+
+---
+
+## 2. Comprehensive Improvement Plan (360-Degree Efficiency)
+
+To improve the efficiency of the project—spanning code quality, security, performance, and product quality—the following actions are proposed:
+
+### Phase 1: CI/CD & Automation (Development Efficiency)
+- **Implement GitHub Actions:**
+  - **Linting & Formatting Check:** Run `black`, `flake8` or `ruff` to enforce consistent code styling.
+  - **Type Checking:** Integrate `mypy` to catch type errors before runtime.
+  - **Automated Testing:** Set up `pytest` to run automated unit tests for API endpoints and internal utilities on every PR.
+- **Pre-commit Hooks:** Add `.pre-commit-config.yaml` to run formatting (e.g., `black`, `isort`) and linting locally before commits are pushed.
+
+### Phase 2: Code Quality & Architecture
+- **Testing Suite:** Currently, there are no tests. Write unit tests for PDF extraction, code generation logic, and API endpoints using `pytest` and `httpx`.
+- **Error Handling & Retries:** Enhance LLM retry mechanisms (currently relying partly on litellm's `num_retries`) and add fallback models natively in the code for better fault tolerance.
+- **Type Hinting:** Enforce strict type hinting across all functions and classes to reduce bugs and make the codebase easier to understand.
+- **Strict Schema Validation (Pydantic V2):** Ensure data flowing between internal modules is strictly typed. Use Pydantic models for all LLM outputs (via LiteLLM’s response_format) and for data passed to the ManimProcessor. This prevents crashes from weirdly formatted LLM responses.
+- **Refactoring:**
+  - Abstract the LLM calls into a dedicated service/class to decouple business logic from the specific LLM library, making it easier to mock in tests.
+- **Dynamic Prompt Management (Prompt Registry):**
+  - Decouple LLM system instructions from static code (currently hardcoded in `manimator/utils/system_prompts.py`) by migrating them to a dynamic management system like Langfuse or a dedicated database table. This enables real-time hot-fixing of AI hallucinations, A/B testing of prompt variations for cost-efficiency, and instant version control rollbacks without requiring full application redeployments.
+- **Self-Healing Animation Loop:**
+  - LLMs frequently make minor syntax errors in Manim. Implement a Feedback Loop: if the `ManimProcessor` catches a SubprocessError during rendering, feed the error log back into the LLM with a prompt to correct its code. This drastically reduces manual intervention for minor syntax hallucinations.
+- **Observability and LLM Tracing:**
+  - Implement structured logging and an error-tracking tool like `Sentry` to catch "silent failures" where code executes but outputs are empty or invalid.
+  - Consider integrating a lightweight LLM observability tool (e.g., `Langfuse` or `Helicone` via LiteLLM's callbacks) to monitor quality, latency, and cost of prompt translations.
+- **Prompt Evaluation Framework:**
+  - Incorporate an evaluation framework (like `promptfoo` or `pytest-llm`) to systematically test changes to system prompts. This will ensure adjustments don't inadvertently break the Manim syntax generation across test cases.
+
+### Phase 3: Security & Cost Improvements
+- **Dependency Vulnerability Scanning:** Use tools like `Dependabot` or `Snyk` to continuously monitor `poetry.lock` and `requirements.txt` for known vulnerabilities.
+- **Secret Management:** Ensure API keys and environment variables are never logged or leaked in error responses. Use proper exception handling that obscures sensitive configuration details.
+- **Sandbox Execution for Manim Code:** Currently, the LLM-generated code is executed directly via `subprocess.run(["manim", ...])`. This is a massive **Remote Code Execution (RCE)** security risk.
+  - *Fix:* Isolate the Manim rendering process using a restricted Docker container (e.g., Docker-in-Docker or a secure sandbox like `gVisor`) with dropped privileges and disabled network access to execute untrusted code safely.
+- **Network Egress Filtering:**
+  - Configure the code-execution sandbox container with Zero Egress. Use Docker network aliases or firewall rules to ensure the container running the manim command has absolutely no access to the internet. Even if an RCE occurs, the attacker cannot exfiltrate data or use the server maliciously.
+- **Cost Management & Rate Limiting:**
+  - Implement API rate limiting (e.g., using `slowapi` for FastAPI) based on IP or user sessions to prevent abuse and save API credit costs.
+  - Set strict timeout limits on the Manim rendering subprocess to prevent infinite loops generated by hallucinated LLM code.
+
+### Phase 4: Product & Performance Efficiency
+- **Caching Mechanisms:** Implement caching (e.g., Redis or simple in-memory caching) for previously processed arXiv IDs and exact prompts to save expensive LLM API calls and rendering time.
+- **Asynchronous Processing:** Long-running tasks like Manim rendering and PDF processing should be handled asynchronously using a task queue like `Celery` or `RQ`. This will prevent FastAPI/Gradio timeouts and provide users with a task status polling mechanism.
+- **Real-Time Progress via WebSockets:**
+  - Since simple polling for long renders can feel laggy to users, replace or augment it with WebSockets. As Manim outputs progress to the terminal, stream these percentages to the Gradio/Frontend interface in real-time for high-quality UX.
+- **PDF Extraction Optimization:** Improve PDF extraction logic using more advanced parsers (e.g., `PyMuPDF` or `pdfplumber`) to handle mathematical equations and figures better before feeding them to the LLM.
+- **Storage Lifecycle Management:**
+  - Implement a cleanup mechanism (e.g., a background cron job or a `Celery beat` task) that automatically purges rendered MP4s, temporary LaTeX files, and partial renders older than a specific timeframe (like 24 hours) to prevent the server's disk space from filling up silently over time.
+
+### Phase 5: Business Logic & User Experience (UX)
+- **Hybrid Access Model (Standard vs. BYOK):** Implement a dual-tier system. A "Standard" tier where the platform manages API calls (using a credit system), and a "Pro" tier allowing users to input their own API keys (BYOK - Bring Your Own Key) to bypass API markups and only pay for computing time.
+- **Conversational Co-pilot Phase (Pre-Generation Refinement):** Introduce an optional interactive step before Manim execution where an "Analyzer" LLM evaluates the user's initial input for missing parameters (e.g., specific colors, animation speed, mathematical focus areas). If ambiguities exist, the AI asks clarifying questions to construct a highly precise "Super-Prompt." This reduces the friction of trial-and-error, prevents wasted computing credits on undesirable renders, and significantly improves the final educational output.
+- **Credit/Cost Estimation Engine:** Build a pre-flight estimation tool. Use token-counting libraries (like `tiktoken`) for the LLM cost, and perform static analysis on the generated Python code (counting `Create` or `Transform` operations) to provide the user with a realistic credit cost interval before they click render.
+- **Educational Examples Gallery (Sandbox):** Create a gallery of pre-rendered animations categorized by complexity (e.g., Basic Math, Physics Simulations, Advanced 3D). Label each example with its exact credit cost to act as a visual baseline for users, reducing billing surprises.
+
+### Phase 6: Long-Term Architectural Evolution
+- **Golang Orchestration Layer:** Plan a migration to decouple the FastAPI server. Replace the main backend with Go (Golang) to handle user authentication, rate limiting, and WebSocket connections using lightweight Goroutines. Python will be strictly relegated to isolated, ephemeral Docker "Workers" that only spin up to render the video.
+- **Ephemeral vs. Persistent Storage Strategy:** Formalize the data storage lifecycle based on the rendering origin. Cloud-rendered videos (Manim) will use temporary ephemeral storage (deleted after download to save AWS/Vercel bucket costs), while any future client-side renders will be saved directly to the user's local device storage.
+
+### Phase 7: Compliance, Legal & Privacy Guardrails
+- **In-Memory Secret Handling (BYOK):** Implement strict ephemeral handling for user-provided API keys. Keys must be passed via secure headers and held only in volatile memory during the session. They must never be persisted to databases or application logs to prevent credential theft.
+- **PII Stripping (GDPR/CCPA Compliance):** Integrate a document sanitization step for downloaded arXiv PDFs. This process must remove Personally Identifiable Information (names, emails, academic affiliations) before sending the text payload to external LLM providers.
+- **Terms of Service & Liability Shield:** Add explicit legal disclaimers regarding the BYOK tier, stating that the platform is not liable for unexpected API costs incurred due to LLM hallucinations, infinite loops, or intensive usage.
+
+### Phase 8: Data Architecture & Analytics (Future-Proofing)
+- **Decoupled Object Storage:** Prevent "Data Gravity" and database bloat by storing heavy binary files (PDFs) in S3-compatible Object Storage (e.g., Supabase Storage or Cloudflare R2 to eliminate egress costs). The relational database (PostgreSQL) should only store the file URLs and associated metadata (arXiv ID, title, user ID).
+- **ORM (Object-Relational Mapping) Abstraction:** Use an ORM like SQLModel or SQLAlchemy for all database interactions instead of raw SQL. This abstracts the database layer, allowing the project to seamlessly migrate to different database providers in the future by simply changing the `DATABASE_URL` environment variable.
+- **Product Telemetry:** Integrate a privacy-respecting product analytics tool (e.g., PostHog or Mixpanel) into the Gradio/Frontend interface. Track user behavior, feature drop-off rates (especially around the cost estimation step), and interaction with the Examples Gallery to continuously optimize the UX.
+- **Architecture Decision Records (ADRs):** Create a `docs/ADR/` folder in the repository. Document the context and reasoning behind major infrastructure choices (e.g., "Why we chose gVisor for sandboxing," "Why we use Celery over RQ"). This ensures long-term maintainability and drastically reduces onboarding time for future contributors.
