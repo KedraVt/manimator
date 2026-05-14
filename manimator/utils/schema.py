@@ -98,7 +98,7 @@ class ManimProcessor:
         ]
 
         try:
-            subprocess.run(cmd, check=True, capture_output=True, text=True)
+            subprocess.run(cmd, check=True, capture_output=True, text=True, timeout=120)
             video_path = os.path.join(
                 temp_dir, "videos", "scene", "480p15", f"{scene_name}.mp4"
             )
@@ -111,5 +111,10 @@ class ManimProcessor:
                 temp_video.write(f.read())
             return temp_video.name
 
+        except subprocess.TimeoutExpired:
+            raise HTTPException(
+                status_code=500,
+                detail="Render error: Animation rendering timed out after 120 seconds",
+            )
         except subprocess.CalledProcessError as e:
             raise HTTPException(status_code=500, detail=f"Render error: {e.stderr}")

@@ -1,6 +1,8 @@
 from fastapi import FastAPI, HTTPException, File, UploadFile, Request
 from fastapi.responses import FileResponse
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import HTMLResponse
 import re
 from pydantic import BaseModel, Field
 from dotenv import load_dotenv
@@ -48,6 +50,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.mount("/static", StaticFiles(directory="frontend"), name="static")
+
+
+@app.get("/", response_class=HTMLResponse)
+async def serve_frontend():
+    with open("frontend/index.html", "r") as f:
+        return f.read()
+
 
 @app.get("/health-check", response_model=HealthCheckResponse)
 @limiter.limit("5/minute")
@@ -62,8 +72,12 @@ async def generate_pdf_scene(request: Request, file: UploadFile = File(...)):
         content = await file.read()
         scene_description = process_pdf_prompt(content)
         return {"scene_description": scene_description}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=500, detail="An error occurred processing the PDF"
+        )
 
 
 @lru_cache(maxsize=128)
@@ -78,9 +92,11 @@ async def generate_prompt_scene(request: Request, body: PromptRequest):
         return SceneDescriptionResponse(
             scene_description=cached_process_prompt_scene(body.prompt)
         )
-    except Exception as e:
+    except HTTPException:
+        raise
+    except Exception:
         raise HTTPException(
-            status_code=500, detail=f"Error generating scene descriptions: {str(e)}"
+            status_code=500, detail="Error generating scene descriptions"
         )
 
 
@@ -98,8 +114,12 @@ async def process_arxiv_by_id(request: Request, arxiv_id: str):
     try:
         scene_description = cached_process_arxiv(arxiv_id)
         return {"scene_description": scene_description}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=500, detail="An error occurred processing the arXiv ID"
+        )
 
 
 @app.post("/generate-animation")
@@ -128,8 +148,12 @@ async def generate_animation(request: Request, body: PromptRequest):
                     status_code=500, detail="Failed to render animation"
                 )
             return FileResponse(video_path, media_type="video/mp4")
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except HTTPException:
+        raise
+    except Exception:
+        raise HTTPException(
+            status_code=500, detail="An error occurred generating the animation"
+        )
 
 
 def main():

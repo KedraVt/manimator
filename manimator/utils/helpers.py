@@ -1,5 +1,5 @@
 from fastapi import HTTPException
-from PyPDF2 import PdfReader, PdfWriter
+from pypdf import PdfReader, PdfWriter
 from io import BytesIO
 import base64
 import requests

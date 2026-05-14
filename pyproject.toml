@@ -16,10 +16,10 @@ litellm = "^1.56.10"
 python-multipart = "^0.0.20"
 tenacity = "^9.0.0"
 manim = "^0.18.1"
-pypdf2 = "^3.0.1"
 gradio = "^5.9.1"
 pydantic = "^2.13.4"
 slowapi = "^0.1.9"
+pypdf = "^6.11.0"
 
 [tool.poetry.group.dev.dependencies]
 pytest = "^9.0.3"

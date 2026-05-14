@@ -1,0 +1,369 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Manimator - AI Educational Visualizations</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --secondary-color: #1e40af;
+            --background-color: #f3f4f6;
+            --surface-color: #ffffff;
+            --text-color: #1f2937;
+            --border-color: #e5e7eb;
+            --radius: 8px;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--background-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 2rem;
+            padding: 2rem;
+            background-color: var(--surface-color);
+            border-radius: var(--radius);
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        h1 {
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 0.5rem;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #6b7280;
+            margin-bottom: 2rem;
+        }
+
+        .tabs {
+            display: flex;
+            border-bottom: 1px solid var(--border-color);
+            margin-bottom: 1.5rem;
+        }
+
+        .tab {
+            padding: 0.75rem 1.5rem;
+            cursor: pointer;
+            border-bottom: 2px solid transparent;
+            font-weight: 600;
+            color: #4b5563;
+        }
+
+        .tab:hover {
+            color: var(--primary-color);
+        }
+
+        .tab.active {
+            color: var(--primary-color);
+            border-bottom-color: var(--primary-color);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        textarea, input[type="file"], input[type="text"] {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius);
+            box-sizing: border-box;
+            font-family: inherit;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        button {
+            width: 100%;
+            padding: 0.75rem;
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            border-radius: var(--radius);
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        button:hover {
+            background-color: var(--secondary-color);
+        }
+
+        button:disabled {
+            background-color: #9ca3af;
+            cursor: not-allowed;
+        }
+
+        .loader {
+            display: none;
+            text-align: center;
+            margin-top: 1rem;
+            color: #6b7280;
+        }
+
+        .spinner {
+            border: 4px solid rgba(0,0,0,0.1);
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            border-left-color: var(--primary-color);
+            animation: spin 1s linear infinite;
+            margin: 0 auto 0.5rem auto;
+        }
+
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        .result-section {
+            display: none;
+            margin-top: 2rem;
+            border-top: 1px solid var(--border-color);
+            padding-top: 1.5rem;
+        }
+
+        video {
+            width: 100%;
+            border-radius: var(--radius);
+            background-color: #000;
+            margin-bottom: 1rem;
+        }
+
+        .error {
+            color: #dc2626;
+            background-color: #fee2e2;
+            padding: 1rem;
+            border-radius: var(--radius);
+            margin-top: 1rem;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎬 Manimator</h1>
+        <div class="subtitle">AI Educational Visualizations via Manim</div>
+
+        <div class="tabs">
+            <div class="tab active" onclick="switchTab('text-tab')">Text Prompt</div>
+            <div class="tab" onclick="switchTab('pdf-tab')">PDF Upload</div>
+            <div class="tab" onclick="switchTab('arxiv-tab')">ArXiv ID</div>
+        </div>
+
+        <!-- Text Tab -->
+        <div id="text-tab" class="tab-content active">
+            <div class="form-group">
+                <label for="prompt-input">Describe the animation you want to create:</label>
+                <textarea id="prompt-input" placeholder="Explain the working of neural networks..."></textarea>
+            </div>
+            <button id="text-btn" onclick="generateFromPrompt()">Generate Animation</button>
+        </div>
+
+        <!-- PDF Tab -->
+        <div id="pdf-tab" class="tab-content">
+            <div class="form-group">
+                <label for="pdf-input">Upload a research paper PDF:</label>
+                <input type="file" id="pdf-input" accept=".pdf">
+            </div>
+            <button id="pdf-btn" onclick="generateFromPDF()">Generate Animation</button>
+        </div>
+
+        <!-- ArXiv Tab -->
+        <div id="arxiv-tab" class="tab-content">
+            <div class="form-group">
+                <label for="arxiv-input">Enter ArXiv ID (e.g. 1706.03762):</label>
+                <input type="text" id="arxiv-input" placeholder="1706.03762">
+            </div>
+            <button id="arxiv-btn" onclick="generateFromArXiv()">Generate Animation</button>
+        </div>
+
+        <!-- Loader -->
+        <div id="loader" class="loader">
+            <div class="spinner"></div>
+            <div id="loader-text">Generating animation... This might take a couple of minutes!</div>
+        </div>
+
+        <!-- Error -->
+        <div id="error-box" class="error"></div>
+
+        <!-- Results -->
+        <div id="result-section" class="result-section">
+            <h3>Result</h3>
+            <video id="video-player" controls></video>
+            <a id="download-link" href="#" download="animation.mp4" style="display:block;text-align:center;margin-bottom:1rem;color:var(--primary-color);text-decoration:none;font-weight:600;">Download Video</a>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            event.target.classList.add('active');
+            document.getElementById(tabId).classList.add('active');
+            resetUI();
+        }
+
+        function resetUI() {
+            document.getElementById('loader').style.display = 'none';
+            document.getElementById('result-section').style.display = 'none';
+            document.getElementById('error-box').style.display = 'none';
+            document.getElementById('video-player').src = '';
+            toggleButtons(false);
+        }
+
+        function toggleButtons(disabled) {
+            document.getElementById('text-btn').disabled = disabled;
+            document.getElementById('pdf-btn').disabled = disabled;
+            document.getElementById('arxiv-btn').disabled = disabled;
+        }
+
+        function showError(msg) {
+            const errorBox = document.getElementById('error-box');
+            errorBox.textContent = msg;
+            errorBox.style.display = 'block';
+            resetLoader();
+        }
+
+        function showLoader(text) {
+            resetUI();
+            toggleButtons(true);
+            document.getElementById('loader').style.display = 'block';
+            document.getElementById('loader-text').textContent = text;
+        }
+
+        function resetLoader() {
+            document.getElementById('loader').style.display = 'none';
+            toggleButtons(false);
+        }
+
+        function displayVideo(blob) {
+            resetLoader();
+            const url = URL.createObjectURL(blob);
+            const player = document.getElementById('video-player');
+            player.src = url;
+
+            const downloadLink = document.getElementById('download-link');
+            downloadLink.href = url;
+
+            document.getElementById('result-section').style.display = 'block';
+        }
+
+        async function fetchAnimation(scenePrompt) {
+            showLoader('Rendering Manim Video... (This is computationally heavy)');
+            try {
+                const response = await fetch(`${API_BASE}/generate-animation`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt: scenePrompt })
+                });
+
+                if (!response.ok) {
+                    const data = await response.json();
+                    throw new Error(data.detail || 'Failed to render animation');
+                }
+
+                const blob = await response.blob();
+                displayVideo(blob);
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        async function generateFromPrompt() {
+            const prompt = document.getElementById('prompt-input').value.trim();
+            if (!prompt) return showError("Please enter a prompt.");
+
+            showLoader('Translating prompt into scene instructions...');
+            try {
+                const res = await fetch(`${API_BASE}/generate-prompt-scene`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ prompt })
+                });
+
+                if (!res.ok) throw new Error("Failed to generate scene description");
+                const data = await res.json();
+
+                await fetchAnimation(data.scene_description);
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        async function generateFromPDF() {
+            const fileInput = document.getElementById('pdf-input');
+            if (!fileInput.files.length) return showError("Please select a PDF file.");
+
+            const file = fileInput.files[0];
+            const formData = new FormData();
+            formData.append('file', file);
+
+            showLoader('Extracting concepts from PDF...');
+            try {
+                const res = await fetch(`${API_BASE}/generate-pdf-scene`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!res.ok) throw new Error("Failed to process PDF");
+                const data = await res.json();
+
+                await fetchAnimation(data.scene_description);
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+
+        async function generateFromArXiv() {
+            const arxivId = document.getElementById('arxiv-input').value.trim();
+            if (!arxivId) return showError("Please enter an ArXiv ID.");
+
+            showLoader(`Fetching PDF for ArXiv ID: ${arxivId}...`);
+            try {
+                const res = await fetch(`${API_BASE}/pdf/${arxivId}`);
+
+                if (!res.ok) throw new Error("Failed to fetch or process ArXiv ID");
+                const data = await res.json();
+
+                await fetchAnimation(data.scene_description);
+            } catch (err) {
+                showError(err.message);
+            }
+        }
+    </script>
+</body>
+</html>
